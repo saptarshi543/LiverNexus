@@ -50,7 +50,7 @@ class RouterAgent:
         fname = filename.lower()
         if "ultra" in fname or "us" in fname:
             return "ultrasound"
-        if "ct" in fname:
+        if "ct" in fname or "volume" in fname:
             return "ct"
         if "mri" in fname:
             return "ct_mri"

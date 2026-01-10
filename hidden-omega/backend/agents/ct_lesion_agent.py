@@ -7,41 +7,81 @@ import pandas as pd
 import os
 import numpy as np
 
-class CTLesionModel(nn.Module):
+class LightweightUNet(nn.Module):
     def __init__(self):
-        super(CTLesionModel, self).__init__()
-        # Standard CNN Architecture for Feature Extraction
-        self.features = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+        super(LightweightUNet, self).__init__()
         
-        # Classifier Head
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(128 * 32 * 32, 512), # Assuming 256x256 input -> 32x32 feature map
+        # Encoder
+        self.enc1 = self.conv_block(1, 16)
+        self.pool1 = nn.MaxPool2d(2)
+        self.enc2 = self.conv_block(16, 32)
+        self.pool2 = nn.MaxPool2d(2)
+        self.enc3 = self.conv_block(32, 64)
+        self.pool3 = nn.MaxPool2d(2)
+        
+        # Bottleneck
+        self.bottleneck = self.conv_block(64, 128)
+        
+        # Decoder
+        self.upconv3 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
+        self.dec3 = self.conv_block(128, 64)
+        
+        self.upconv2 = nn.ConvTranspose2d(64, 32, kernel_size=2, stride=2)
+        self.dec2 = self.conv_block(64, 32)
+        
+        self.upconv1 = nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2)
+        self.dec1 = self.conv_block(32, 16)
+        
+        # Final
+        self.final_conv = nn.Conv2d(16, 1, kernel_size=1) # Binary classification per pixel
+
+    def conv_block(self, in_channels, out_channels):
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Dropout(0.5),
-            nn.Linear(512, 2) # Tumor Present vs No Tumor
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
         )
 
     def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
+        e1 = self.enc1(x)
+        p1 = self.pool1(e1)
+        
+        e2 = self.enc2(p1)
+        p2 = self.pool2(e2)
+        
+        e3 = self.enc3(p2)
+        p3 = self.pool3(e3)
+        
+        b = self.bottleneck(p3)
+        
+        d3 = self.upconv3(b)
+        # Pad if necessary (simple concatenation assuming 256x256 input)
+        if d3.size(2) != e3.size(2):
+            d3 = torch.nn.functional.interpolate(d3, size=(e3.size(2), e3.size(3)))
+        d3 = torch.cat((e3, d3), dim=1)
+        d3 = self.dec3(d3)
+        
+        d2 = self.upconv2(d3)
+        if d2.size(2) != e2.size(2):
+            d2 = torch.nn.functional.interpolate(d2, size=(e2.size(2), e2.size(3)))
+        d2 = torch.cat((e2, d2), dim=1)
+        d2 = self.dec2(d2)
+        
+        d1 = self.upconv1(d2)
+        if d1.size(2) != e1.size(2):
+            d1 = torch.nn.functional.interpolate(d1, size=(e1.size(2), e1.size(3)))
+        d1 = torch.cat((e1, d1), dim=1)
+        d1 = self.dec1(d1)
+        
+        out = self.final_conv(d1)
+        return out
 
 class CTLesionAgent:
-    def __init__(self, model_path="models/ct_lesion_model.pth", data_csv_path="test_data/lits.csv"):
-        self.model = CTLesionModel()
+    def __init__(self, model_path="models/ct_lesion_model_light.pth", data_csv_path="test_data/lits.csv"):
+        self.model = LightweightUNet()
         self.model_loaded = False
         self.data_csv = None
         
@@ -122,20 +162,38 @@ class CTLesionAgent:
         # Priority 2: Use Model if Loaded
         if self.model_loaded:
             try:
-                image = Image.open(io.BytesIO(image_bytes))
+                # Preprocess
+                image = Image.open(io.BytesIO(image_bytes)).convert('L')
                 tensor = self.transform(image).unsqueeze(0)
                 
+                # Inference
                 with torch.no_grad():
                     outputs = self.model(tensor)
-                    probs = torch.nn.functional.softmax(outputs, dim=1)
+                    # Sigmoid to get probability map
+                    mask_prob = torch.sigmoid(outputs)
                 
-                pred_idx = torch.argmax(probs).item()
-                classes = ["No Tumor", "Tumor Detected"]
+                # Post-processing / Heuristic
+                # If we have significant pixels with high probability, classify as Tumor
+                tumor_pixels = (mask_prob > 0.5).sum().item()
+                total_pixels = 256 * 256
+                tumor_ratio = tumor_pixels / total_pixels
+                
+                # Heuristic threshold: e.g., if > 0.1% of pixels are tumor
+                has_tumor = tumor_ratio > 0.001 
+                
+                diagnosis = "Tumor Detected" if has_tumor else "No Tumor"
+                confidence = float(min(tumor_ratio * 1000, 1.0)) if has_tumor else float(1.0 - (tumor_ratio * 100))
+                confidence = max(0.0, min(1.0, confidence)) # Clamp
+                
                 return {
                     "type": "CT Lesion Detection",
-                    "diagnosis": classes[pred_idx],
-                    "confidence": probs[0][pred_idx].item(),
-                    "details": {"model_probabilities": probs.tolist()}
+                    "diagnosis": diagnosis,
+                    "confidence": confidence,
+                    "details": {
+                        "model": "LightweightUNet", 
+                        "tumor_pixel_count": tumor_pixels,
+                        "tumor_ratio": tumor_ratio
+                    }
                 }
             except Exception as e:
                 return {"error": f"Model inference failed: {e}"}
