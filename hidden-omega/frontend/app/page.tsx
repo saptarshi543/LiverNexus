@@ -31,17 +31,58 @@ export default function Home() {
       let headers = {};
 
       if (isTabular) {
-        // For tabular, read text and send as JSON
         const text = await file.text();
-        // Basic parsing for JSON, if CSV would need more logic. 
-        // For demo assuming JSON for now or robust CSV handling backend. 
-        // Router expects dict for 'tabular'.
+
         try {
+          // Try JSON first
           body = JSON.stringify(JSON.parse(text));
           headers = { 'Content-Type': 'application/json' };
         } catch (e) {
-          // Fallback for CSV or error
-          throw new Error("Invalid JSON format for tabular data");
+          // If JSON fails, try CSV
+          try {
+            // Split by newline and remove empty lines
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) throw new Error("CSV file must have at least a header row and a data row");
+
+            const headers_csv = lines[0].split(',').map(h => h.trim());
+
+            const dataObj: any = {};
+
+            // DETECT FORMAT: Vertical (Parameter, Value) vs Horizontal (ALT, AST, ...)
+            if (headers_csv[0].toLowerCase() === 'parameter' && headers_csv[1].toLowerCase() === 'value') {
+              // Vertical Format
+              for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',');
+                if (parts.length >= 2) {
+                  const key = parts[0].trim();
+                  const val = parts[1].trim();
+                  if (!isNaN(Number(val))) {
+                    dataObj[key] = Number(val);
+                  }
+                }
+              }
+            } else {
+              // Horizontal Format (Fallback)
+              const values = lines[1].split(',').map(v => v.trim());
+
+              if (headers_csv.length !== values.length) {
+                throw new Error(`Column mismatch: Header has ${headers_csv.length} cols, Data has ${values.length}`);
+              }
+
+              headers_csv.forEach((h: string, i: number) => {
+                const val = values[i];
+                if (isNaN(Number(val))) {
+                  throw new Error(`Data row contains non-numeric value '${val}' in column '${h}'`);
+                }
+                dataObj[h] = Number(val);
+              });
+            }
+
+            body = JSON.stringify(dataObj);
+            headers = { 'Content-Type': 'application/json' };
+          } catch (csvError: any) {
+            throw new Error(csvError.message || "Invalid format. Please upload valid JSON or CSV.");
+          }
         }
       } else {
         const formData = new FormData();
@@ -56,7 +97,7 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Analysis failed');
+        throw new Error(`Analysis failed: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -64,9 +105,9 @@ export default function Home() {
       await new Promise(r => setTimeout(r, 1000));
 
       setResult(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setResult({ error: "Failed to connect to AI Agents. Ensure Backend is running." });
+      setResult({ error: error.message || "Failed to connect to AI Agents." });
     } finally {
       setIsProcessing(false);
       setProcessingStep("");
