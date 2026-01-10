@@ -5,6 +5,7 @@ from .biochem_agent import BiochemAgent
 from .ultrasound_agent import UltrasoundAgent
 from .ct_mri_agent import CTMRIAgent
 from .histo_agent import HistoAgent
+from .ct_lesion_agent import CTLesionAgent
 
 class RouterAgent:
     def __init__(self):
@@ -12,6 +13,7 @@ class RouterAgent:
         self.ultrasound = UltrasoundAgent()
         self.ct_mri = CTMRIAgent()
         self.histo = HistoAgent()
+        self.ct_lesion = CTLesionAgent()
 
     def route_and_predict(self, input_data, data_type="image", filename=""):
         """
@@ -30,7 +32,11 @@ class RouterAgent:
             
             if image_type == "ultrasound":
                 return self.ultrasound.predict(input_data)
+            elif image_type == "ct":
+                # Route specifically to the new CT Lesion Agent
+                return self.ct_lesion.predict(input_data, filename=filename)
             elif image_type == "ct_mri":
+                # Fallback for generic/MRI
                 return self.ct_mri.predict(input_data)
             elif image_type == "histopathology":
                 return self.histo.predict(input_data)
@@ -44,7 +50,9 @@ class RouterAgent:
         fname = filename.lower()
         if "ultra" in fname or "us" in fname:
             return "ultrasound"
-        if "ct" in fname or "mri" in fname:
+        if "ct" in fname:
+            return "ct"
+        if "mri" in fname:
             return "ct_mri"
         if "histo" in fname or "biopsy" in fname or "slide" in fname:
             return "histopathology"
