@@ -47,6 +47,25 @@ export default function ResultCard({ data }: ResultCardProps) {
                         </p>
                     </div>
 
+                    {data.recommendations && data.recommendations.length > 0 && (
+                        <div className="bg-blue-500/10 rounded-xl p-6 border border-blue-500/20 mb-6">
+                            <h3 className="text-lg font-semibold text-blue-400 mb-3 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                Recommended Next Steps
+                            </h3>
+                            <ul className="space-y-2">
+                                {data.recommendations.map((rec: string, idx: number) => (
+                                    <li key={idx} className="flex items-start gap-2 text-slate-300">
+                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                                        <span>{rec}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {data.details && (
                         <div className="mt-6">
                             <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Detailed Metrics</h4>

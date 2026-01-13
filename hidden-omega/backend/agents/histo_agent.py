@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
 import io
+import numpy as np
 
 import os
 
@@ -73,16 +74,34 @@ class HistoAgent:
             # Verify if it looks like H&E (Pink/Purple)
             # This is a heuristic check
             # Real model would segment cells
-            
+
+            # Dummy values for demonstration purposes
+            is_fibrosis = np.random.rand() > 0.5
+            avg_intensity = np.random.uniform(0.1, 0.9)
+
+            diagnosis = "Fibrosis/Cirrhosis" if is_fibrosis else "Normal Tissue"
+            confidence = 0.88
+
+            recommendations = []
+            if is_fibrosis:
+                 recommendations = [
+                     "Monitor for portal hypertension",
+                     "Screen for Hepatocellular Carcinoma (HCC)",
+                     "Evaluate for liver transplantation eligibility if advanced"
+                 ]
+            else:
+                 recommendations = ["No specific histopathological intervention"]
+
             return {
-                "diagnosis": "MASH / Steatohepatitis",
-                "confidence": 0.88,
+                "diagnosis": diagnosis,
+                "confidence": confidence,
+                "recommendations": recommendations,
                 "type": "Histopathology Analysis",
                 "details": {
-                    "Fibrosis Stage": "F2 (Periportal)",
-                    "Steatosis": "Macrovesicular > 33%"
-                },
-                "segmentation_mask_available": True
+                    "stain_intensity": float(avg_intensity),
+                    "nuclei_count_estimate": int(np.random.randint(50, 200)), # Simulated metric
+                    "fibrosis_stage_estimate": "F3-F4" if is_fibrosis else "F0-F1"
+                }
             }
         except Exception as e:
             return {"error": str(e)}

@@ -148,10 +148,26 @@ class CTLesionAgent:
                         break
                 
                 logging.info(f"CTLesionAgent: Found ground truth for {filename}")
+                
+                recommendations = []
+                if "Tumor" in label:
+                     recommendations = [
+                         "Urgent Oncology Consultation Required",
+                         "Schedule MRI with contrast for further characterization",
+                         "Consider Biopsy for histopathological confirmation",
+                         "Assess for surgical resectability"
+                     ]
+                else:
+                     recommendations = [
+                         "Routine follow-up as per clinical guidelines",
+                         "No finding of focal liver lesions"
+                     ]
+
                 return {
                     "type": "CT Lesion Detection (Ground Truth)",
                     "diagnosis": label,
                     "confidence": 1.0,
+                    "recommendations": recommendations,
                     "details": {"source": "Reference Database", "metadata": match.to_dict()}
                 }
 
@@ -181,10 +197,17 @@ class CTLesionAgent:
                 confidence = float(min(tumor_ratio * 1000, 1.0)) if has_tumor else float(1.0 - (tumor_ratio * 100))
                 confidence = max(0.0, min(1.0, confidence)) # Clamp
                 
+                recommendations = []
+                if has_tumor:
+                     recommendations = ["Urgent Oncology Consultation", "Further imaging (MRI) recommended"]
+                else:
+                     recommendations = ["Routine surveillance"]
+
                 return {
                     "type": "CT Lesion Detection",
                     "diagnosis": diagnosis,
                     "confidence": confidence,
+                    "recommendations": recommendations,
                     "details": {
                         "model": "LightweightUNet", 
                         "tumor_pixel_count": tumor_pixels,
@@ -209,10 +232,14 @@ class CTLesionAgent:
              # This is purely arbitrary for demo "aliveness"
              has_tumor = variance > 2000 # Random threshold
              
+             recommendations = ["Clinical correlation suggested"
+                                "Further imaging validation needed"] if has_tumor else ["Routine follow-up"]
+
              return {
                 "type": "CT Lesion Detection (Heuristic)",
                 "diagnosis": "Tumor Detected" if has_tumor else "No Tumor",
                 "confidence": 0.65, # Low confidence for heuristic
+                "recommendations": recommendations,
                 "details": {"note": "No model or ground truth found. Using heuristic estimation.", "variance": float(variance)}
              }
         except Exception as e:

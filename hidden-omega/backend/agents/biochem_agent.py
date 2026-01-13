@@ -61,13 +61,33 @@ class BiochemAgent:
             diagnosis_map = {0: "Healthy", 1: "Liver Disease Detected"}
             diagnosis = diagnosis_map.get(class_id, "Unknown")
             
+            # Generate Recommendations
+            recommendations = []
+            if diagnosis == "Liver Disease Detected":
+                recommendations = [
+                    "Consult a Hepatologist immediately",
+                    "Schedule a follow-up Elastography or Ultrasound",
+                    "Avoid alcohol and hepatotoxic medications",
+                    "Monitor liver enzymes (ALT/AST) weekly"
+                ]
+            elif diagnosis == "Healthy":
+                recommendations = [
+                    "Maintain a balanced diet and healthy weight",
+                    "Regular annual checkups recommended",
+                    "Vaccinate against Hepatitis A and B if not already done"
+                ]
+            else:
+                 recommendations = ["Consult a general practitioner for interpretation"]
+
             return {
                 "diagnosis": diagnosis,
                 "confidence": confidence,
+                "recommendations": recommendations,
                 "details": {
                     "probabilities": probs.tolist(), 
                     "features_used": numeric_df.columns.tolist()
                 }
             }
+
         except Exception as e:
             return {"error": str(e)}
