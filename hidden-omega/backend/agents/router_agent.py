@@ -5,7 +5,12 @@ from .biochem_agent import BiochemAgent
 from .ultrasound_agent import UltrasoundAgent
 from .ct_mri_agent import CTMRIAgent
 from .histo_agent import HistoAgent
+from .histo_agent import HistoAgent
 from .ct_lesion_agent import CTLesionAgent
+import logging
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class RouterAgent:
     def __init__(self):
@@ -22,13 +27,13 @@ class RouterAgent:
         data_type: 'tabular' or 'image'
         """
         if data_type == "tabular":
-            print(f"Routing to Biochem Agent. Data: {input_data}")
+            logging.info(f"Routing to Biochem Agent. Data: {input_data}")
             return self.biochem.predict(input_data)
         
         elif data_type == "image":
             # Heuristic routing based on image properties
             image_type = self._classify_image_type(input_data, filename)
-            print(f"Router detected image type: {image_type}")
+            logging.info(f"Router detected image type: {image_type}")
             
             if image_type == "ultrasound":
                 return self.ultrasound.predict(input_data)
@@ -80,5 +85,5 @@ class RouterAgent:
             return "ct_mri" 
             
         except Exception as e:
-            print(f"Error in classification: {e}")
+            logging.error(f"Error in classification: {e}")
             return "unknown"

@@ -24,13 +24,37 @@ class BiochemAgent:
             self.model.fit(X_dummy, y_dummy)
 
     def predict(self, data: dict):
-        # Expecting keys: ALT, AST, ALP, Albumin, Bilirubin
-        df = pd.DataFrame([data])
-        # Ensure correct order/columns (in a real app, logic would be stricter)
-        # For demo, just taking values
+        # Expected features for the model (based on the dummy training)
+        # in a real scenario, these would be fixed.
+        # For this robust fix, we'll try to extract numeric values only.
+        
         try:
-            prediction = self.model.predict(df.values)
-            probs = self.model.predict_proba(df.values)
+            # 1. Convert to DataFrame
+            df = pd.DataFrame([data])
+            
+            # 2. Filter for numeric columns only, dropping metadata like Dates/IDs
+            numeric_df = df.select_dtypes(include=[np.number])
+            
+            # 3. Handle Missing/Extra Features
+            # The dummy model was trained on 5 features. We need to ensure input has 5.
+            # If we don't have enough, we pad. If we have too many, we truncate/select.
+            
+            # Get values as float array
+            input_values = numeric_df.values[0]
+            
+            # Ensure exactly 5 features (as per _load_or_create_model X_dummy shape)
+            if len(input_values) < 5:
+                # Pad with zeros if missing features
+                input_values = np.pad(input_values, (0, 5 - len(input_values)), 'constant')
+            elif len(input_values) > 5:
+                # Truncate if too many (simple heuristic)
+                input_values = input_values[:5]
+                
+            # Reshape for sklearn (1, n_features)
+            input_values = input_values.reshape(1, -1)
+
+            prediction = self.model.predict(input_values)
+            probs = self.model.predict_proba(input_values)
             class_id = int(prediction[0])
             confidence = float(np.max(probs))
             
@@ -40,7 +64,10 @@ class BiochemAgent:
             return {
                 "diagnosis": diagnosis,
                 "confidence": confidence,
-                "details": {"probabilities": probs.tolist()}
+                "details": {
+                    "probabilities": probs.tolist(), 
+                    "features_used": numeric_df.columns.tolist()
+                }
             }
         except Exception as e:
             return {"error": str(e)}

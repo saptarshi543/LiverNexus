@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
 import io
+import os
 
 class CTMRIModel(nn.Module):
     def __init__(self):
@@ -29,8 +30,14 @@ class CTMRIModel(nn.Module):
         return self.fc(feat)
 
 class CTMRIAgent:
-    def __init__(self):
+    def __init__(self, model_path="models/ct_mri_model.pth"):
         self.model = CTMRIModel()
+        if os.path.exists(model_path):
+             try:
+                self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+                print(f"CTMRIAgent: Loaded model from {model_path}")
+             except Exception as e:
+                print(f"CTMRIAgent: Failed to load model: {e}")
         self.model.eval()
         self.transform = transforms.Compose([
             transforms.Grayscale(num_output_channels=1),

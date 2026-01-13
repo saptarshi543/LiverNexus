@@ -4,6 +4,27 @@ import torchvision.transforms as transforms
 from PIL import Image
 import io
 
+import os
+
+class SimpleHistoNet(nn.Module):
+    def __init__(self):
+        super(SimpleHistoNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 16, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(4),
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(4),
+            nn.AdaptiveAvgPool2d((1, 1))
+        )
+        self.fc = nn.Linear(32, 1)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        return self.fc(x)
+
 class UNet(nn.Module):
     def __init__(self):
         super(UNet, self).__init__()
@@ -30,7 +51,16 @@ class UNet(nn.Module):
         return x
 
 class HistoAgent:
-    def __init__(self):
+    def __init__(self, model_path="models/histo_model.pth"):
+        self.model = SimpleHistoNet()
+        if os.path.exists(model_path):
+             try:
+                self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+                print(f"HistoAgent: Loaded model from {model_path}")
+             except Exception as e:
+                print(f"HistoAgent: Failed to load model: {e}")
+        self.model.eval()
+        
         self.transform = transforms.Compose([
             transforms.Resize((512, 512)),
             transforms.ToTensor(),

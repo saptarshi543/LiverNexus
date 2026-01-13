@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
 import io
+import os
 
 class SimpleCNN(nn.Module):
     def __init__(self, num_classes=3):
@@ -31,8 +32,14 @@ class SimpleCNN(nn.Module):
         return x
 
 class UltrasoundAgent:
-    def __init__(self):
+    def __init__(self, model_path="models/ultrasound_model.pth"):
         self.model = SimpleCNN(num_classes=3) # Normal, Fatty, Tumor
+        if os.path.exists(model_path):
+            try:
+                self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+                print(f"UltrasoundAgent: Loaded model from {model_path}")
+            except Exception as e:
+                print(f"UltrasoundAgent: Failed to load model: {e}")
         self.model.eval() # Set to eval mode
         self.transform = transforms.Compose([
             transforms.Grayscale(num_output_channels=1),

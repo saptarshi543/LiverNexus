@@ -8,6 +8,10 @@ from PIL import Image
 import pandas as pd
 import numpy as np
 import time
+import logging
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,18 +21,18 @@ SUBSET_CSV_PATH = os.path.join(DATA_DIR, "lits_train_subset.csv")
 MODEL_SAVE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "ct_lesion_model_light.pth")
 
 # Hyperparameters
-BATCH_SIZE = 8
-LEARNING_RATE = 1e-4
-EPOCHS = 3 # Increased for better training
+BATCH_SIZE: int = 8
+LEARNING_RATE: float = 1e-4
+EPOCHS: int = 3
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class LiTSDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None):
+    def __init__(self, csv_file: str, root_dir: str, transform=None):
         self.data_frame = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data_frame)
 
     def __getitem__(self, idx):
@@ -84,7 +88,7 @@ class LightweightUNet(nn.Module):
         # Final
         self.final_conv = nn.Conv2d(16, 1, kernel_size=1) # Binary classification per pixel
 
-    def conv_block(self, in_channels, out_channels):
+    def conv_block(self, in_channels: int, out_channels: int) -> nn.Sequential:
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
@@ -94,7 +98,7 @@ class LightweightUNet(nn.Module):
             nn.ReLU(inplace=True)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         e1 = self.enc1(x)
         p1 = self.pool1(e1)
         
@@ -107,7 +111,7 @@ class LightweightUNet(nn.Module):
         b = self.bottleneck(p3)
         
         d3 = self.upconv3(b)
-        # Pad if necessary (simple concatenation assuming 256x256 input)
+        # Pad if necessary
         d3 = torch.cat((e3, d3), dim=1)
         d3 = self.dec3(d3)
         
@@ -125,8 +129,8 @@ class LightweightUNet(nn.Module):
 def train():
     os.makedirs(os.path.dirname(MODEL_SAVE_PATH), exist_ok=True)
     
-    print(f"Device: {DEVICE}")
-    print(f"Loading data from {SUBSET_CSV_PATH}")
+    logging.info(f"Device: {DEVICE}")
+    logging.info(f"Loading data from {SUBSET_CSV_PATH}")
     
     # Transforms
     transform = transforms.Compose([
@@ -137,13 +141,29 @@ def train():
     dataset = LiTSDataset(SUBSET_CSV_PATH, IMAGES_DIR, transform=transform)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True if torch.cuda.is_available() else False)
     
-    print(f"Dataset size: {len(dataset)}")
+    logging.info(f"Dataset size: {len(dataset)}")
     
     model = LightweightUNet().to(DEVICE)
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    criterion = nn.BCEWithLogitsLoss() # Better numerical stability than BCELoss + Sigmoid
     
-    print("Starting training...")
+    # Resume Capabilities
+    start_epoch = 0
+    if os.path.exists(MODEL_SAVE_PATH):
+        try:
+            logging.info(f"Found existing model at {MODEL_SAVE_PATH}. Loading checkpoints...")
+            state_dict = torch.load(MODEL_SAVE_PATH, map_location=DEVICE)
+            model.load_state_dict(state_dict)
+            logging.info("Model loaded successfully. Resuming training...")
+            # Note: Ideally we save optimizer state and epoch number too for perfect resume.
+            # For this simplified implementation, we just load weights and continue 'finetuning'.
+        except Exception as e:
+            logging.error(f"Failed to load existing model: {e}")
+    else:
+        logging.info("No existing model found. Starting fresh training.")
+
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    criterion = nn.BCEWithLogitsLoss() 
+    
+    logging.info(f"Starting training for {EPOCHS} epochs...")
     model.train()
     
     start_time = time.time()
@@ -165,18 +185,18 @@ def train():
             running_loss += loss.item()
             
             if i % 100 == 0:
-                print(f"Epoch [{epoch+1}/{EPOCHS}], Step [{i}/{len(dataloader)}], Loss: {loss.item():.4f}")
+                logging.info(f"Epoch [{epoch+1}/{EPOCHS}], Step [{i}/{len(dataloader)}], Loss: {loss.item():.4f}")
         
         # Save checkpoint at end of epoch
         torch.save(model.state_dict(), MODEL_SAVE_PATH)
-        print(f"Epoch {epoch+1} finished. Model saved to {MODEL_SAVE_PATH}")
+        logging.info(f"Epoch {epoch+1} finished. Model saved to {MODEL_SAVE_PATH}")
 
     end_time = time.time()
-    print(f"Training finished in {end_time - start_time:.2f} seconds.")
+    logging.info(f"Training finished in {end_time - start_time:.2f} seconds.")
     
     # Save Model (Final)
     torch.save(model.state_dict(), MODEL_SAVE_PATH)
-    print(f"Model saved to {MODEL_SAVE_PATH}")
+    logging.info(f"Final model saved to {MODEL_SAVE_PATH}")
 
 if __name__ == "__main__":
     train()

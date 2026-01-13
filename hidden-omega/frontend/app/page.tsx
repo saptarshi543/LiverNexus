@@ -25,7 +25,7 @@ export default function Home() {
       await new Promise(r => setTimeout(r, 1200));
 
       const isTabular = file.name.endsWith('.json') || file.name.endsWith('.csv');
-      const endpoint = isTabular ? 'http://localhost:8000/analyze/tabular' : 'http://localhost:8000/analyze/image';
+      const endpoint = isTabular ? 'http://127.0.0.1:8000/analyze/tabular' : 'http://127.0.0.1:8000/analyze/image';
 
       let body;
       let headers = {};
@@ -71,10 +71,14 @@ export default function Home() {
 
               headers_csv.forEach((h: string, i: number) => {
                 const val = values[i];
-                if (isNaN(Number(val))) {
-                  throw new Error(`Data row contains non-numeric value '${val}' in column '${h}'`);
+                // Frontend Validation Relaxed: Allow non-numeric values (IDs, Dates)
+                // Backend agent will filter for numeric features.
+                if (!isNaN(Number(val)) && val.trim() !== '') {
+                  dataObj[h] = Number(val);
+                } else {
+                  // Pass strings as is
+                  dataObj[h] = val;
                 }
-                dataObj[h] = Number(val);
               });
             }
 

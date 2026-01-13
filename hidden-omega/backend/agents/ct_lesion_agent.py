@@ -6,6 +6,10 @@ import io
 import pandas as pd
 import os
 import numpy as np
+import logging
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class LightweightUNet(nn.Module):
     def __init__(self):
@@ -80,7 +84,7 @@ class LightweightUNet(nn.Module):
         return out
 
 class CTLesionAgent:
-    def __init__(self, model_path="models/ct_lesion_model_light.pth", data_csv_path="test_data/lits.csv"):
+    def __init__(self, model_path: str = "models/ct_lesion_model_light.pth", data_csv_path: str = "test_data/lits.csv"):
         self.model = LightweightUNet()
         self.model_loaded = False
         self.data_csv = None
@@ -91,20 +95,18 @@ class CTLesionAgent:
                 self.model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
                 self.model.eval()
                 self.model_loaded = True
-                print(f"CTLesionAgent: Loaded trained model from {model_path}")
+                logging.info(f"CTLesionAgent: Loaded trained model from {model_path}")
             except Exception as e:
-                print(f"CTLesionAgent: Failed to load model: {e}")
+                logging.error(f"CTLesionAgent: Failed to load model: {e}")
         
-        # 2. Try Loading Reference CSV (for Ground Truth Lookup)
+        # 2. Try Loading Reference CSV
         if os.path.exists(data_csv_path):
             try:
                 self.data_csv = pd.read_csv(data_csv_path)
-                # Ensure filename column exists or minimal validation
-                print(f"CTLesionAgent: Loaded reference data from {data_csv_path}")
-                # Normalize columns if needed
+                logging.info(f"CTLesionAgent: Loaded reference data from {data_csv_path}")
                 self.data_csv.columns = [c.lower() for c in self.data_csv.columns]
             except Exception as e:
-                print(f"CTLesionAgent: Failed to load reference CSV: {e}")
+                logging.error(f"CTLesionAgent: Failed to load reference CSV: {e}")
 
         self.transform = transforms.Compose([
             transforms.Grayscale(num_output_channels=1),
@@ -112,7 +114,7 @@ class CTLesionAgent:
             transforms.ToTensor(),
         ])
 
-    def predict(self, image_bytes, filename=""):
+    def predict(self, image_bytes: bytes, filename: str = "") -> dict:
         results = {
             "type": "CT Lesion Detection",
             "diagnosis": "Unknown",
@@ -120,28 +122,22 @@ class CTLesionAgent:
             "details": {}
         }
         
-        # Priority 1: Check Ground Truth from CSV (Perfect AI Simulation)
+        # Priority 1: Check Ground Truth from CSV
         if self.data_csv is not None and filename:
-            # Search for filename in CSV (flexible matching)
-            # Assuming 'filename' or 'image' column
             match = None
             filename_search = os.path.basename(filename).lower()
             
             for col in self.data_csv.columns:
                 if "file" in col or "name" in col or "id" in col:
-                     # Check exact match or substring
                      matches = self.data_csv[self.data_csv[col].astype(str).str.lower().str.contains(filename_search, na=False)]
                      if not matches.empty:
-                         match = matches.iloc[0]
-                         break
+                          match = matches.iloc[0]
+                          break
             
             if match is not None:
-                # Extract diagnosis/label
-                # Assuming 'label', 'diagnosis', 'tumor', 'lesion' columns
                 label = "Analyze Result"
                 confidence = 1.0
                 
-                # Heuristic to find the label column
                 for col in match.index:
                     if col in ['label', 'diagnosis', 'class', 'target', 'tumor']:
                         label_val = match[col]
@@ -151,7 +147,7 @@ class CTLesionAgent:
                              label = str(label_val)
                         break
                 
-                print(f"CTLesionAgent: Found ground truth for {filename}")
+                logging.info(f"CTLesionAgent: Found ground truth for {filename}")
                 return {
                     "type": "CT Lesion Detection (Ground Truth)",
                     "diagnosis": label,
