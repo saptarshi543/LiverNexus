@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
 import io
+import numpy as np
 import os
 
 class SimpleCNN(nn.Module):
