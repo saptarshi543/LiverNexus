@@ -27,8 +27,8 @@ export default function Home() {
       const isTabular = file.name.endsWith('.json') || file.name.endsWith('.csv');
       const endpoint = isTabular ? 'http://127.0.0.1:8000/analyze/tabular' : 'http://127.0.0.1:8000/analyze/image';
 
-      let body;
-      let headers = {};
+      let body: BodyInit | null = null;
+      let headers: HeadersInit = {};
 
       if (isTabular) {
         const text = await file.text();
@@ -93,6 +93,8 @@ export default function Home() {
         formData.append('file', file);
         body = formData;
       }
+
+      if (!body) throw new Error("Failed to prepare request body.");
 
       const response = await fetch(endpoint, {
         method: 'POST',

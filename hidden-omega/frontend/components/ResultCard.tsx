@@ -66,6 +66,58 @@ export default function ResultCard({ data }: ResultCardProps) {
                         </div>
                     )}
 
+                    {/* Prescription: Medicines */}
+                    {data.medicines && data.medicines.length > 0 && (
+                        <div className="bg-teal-500/10 rounded-xl p-6 border border-teal-500/20 mb-4">
+                            <h3 className="text-lg font-semibold text-teal-400 mb-3 flex items-center gap-2">
+                                <span>💊</span> Detected Medications
+                            </h3>
+                            <ul className="space-y-2">
+                                {data.medicines.map((med: string, idx: number) => (
+                                    <li key={idx} className="text-slate-300 border-b border-teal-500/20 pb-2 last:border-0 last:pb-0">{med}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Prescription: Lab Values */}
+                    {data.labs && data.labs.length > 0 && (
+                        <div className="bg-purple-500/10 rounded-xl p-6 border border-purple-500/20 mb-4">
+                            <h3 className="text-lg font-semibold text-purple-400 mb-3 flex items-center gap-2">
+                                <span>🧪</span> Detected Lab Values
+                            </h3>
+                            <ul className="space-y-2">
+                                {data.labs.map((lab: string, idx: number) => (
+                                    <li key={idx} className="text-slate-300 font-mono text-sm">{lab}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Prescription: Suggestions (Standard of Care) */}
+                    {data.suggestions && data.suggestions.length > 0 && (
+                        <div className="bg-indigo-500/10 rounded-xl p-6 border border-indigo-500/20 mb-6">
+                            <h3 className="text-lg font-semibold text-indigo-400 mb-3 flex items-center gap-2">
+                                <span>💡</span> Standard Treatment Suggestions
+                            </h3>
+                            <div className="space-y-4">
+                                {data.suggestions.map((suggestion: any, idx: number) => (
+                                    <div key={idx} className="bg-slate-900/50 p-4 rounded-lg">
+                                        <h4 className="font-bold text-indigo-300 mb-1">{suggestion.condition}</h4>
+                                        <p className="text-sm text-slate-400 italic mb-2">{suggestion.note}</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {suggestion.standard_care.map((med: string, m_idx: number) => (
+                                                <span key={m_idx} className="px-2 py-1 bg-indigo-500/20 text-indigo-200 text-xs rounded-md border border-indigo-500/30">
+                                                    {med}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {data.details && (
                         <div className="mt-6">
                             <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Detailed Metrics</h4>

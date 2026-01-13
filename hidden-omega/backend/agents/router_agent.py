@@ -7,6 +7,7 @@ from .ct_mri_agent import CTMRIAgent
 from .histo_agent import HistoAgent
 from .histo_agent import HistoAgent
 from .ct_lesion_agent import CTLesionAgent
+from .prescription_agent import PrescriptionAgent
 import logging
 
 # Configure Logging
@@ -19,6 +20,7 @@ class RouterAgent:
         self.ct_mri = CTMRIAgent()
         self.histo = HistoAgent()
         self.ct_lesion = CTLesionAgent()
+        self.prescription = PrescriptionAgent()
 
     def route_and_predict(self, input_data, data_type="image", filename=""):
         """
@@ -35,7 +37,9 @@ class RouterAgent:
             image_type = self._classify_image_type(input_data, filename)
             logging.info(f"Router detected image type: {image_type}")
             
-            if image_type == "ultrasound":
+            if image_type == "rx":
+                return self.prescription.predict(input_data)
+            elif image_type == "ultrasound":
                 return self.ultrasound.predict(input_data)
             elif image_type == "ct":
                 # Route specifically to the new CT Lesion Agent
@@ -53,6 +57,8 @@ class RouterAgent:
     def _classify_image_type(self, image_bytes, filename=""):
         # 1. Simple filename check (for demo reliability)
         fname = filename.lower()
+        if "rx" in fname or "prescription" in fname or "report" in fname:
+            return "rx"
         if "ultra" in fname or "us" in fname:
             return "ultrasound"
         if "ct" in fname or "volume" in fname:

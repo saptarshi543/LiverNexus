@@ -1,0 +1,80 @@
+{
+    "conditions": {
+        "hepatitis_b": {
+            "keywords": [
+                "hepatitis b",
+                "hbv",
+                "hep b"
+            ],
+            "medications": [
+                "Tenofovir",
+                "Entecavir"
+            ],
+            "description": "Antiviral therapy to suppress HBV replication."
+        },
+        "hepatitis_c": {
+            "keywords": [
+                "hepatitis c",
+                "hcv",
+                "hep c"
+            ],
+            "medications": [
+                "Sofosbuvir",
+                "Velpatasvir",
+                "Glecaprevir",
+                "Pibrentasvir"
+            ],
+            "description": "Direct-acting antivirals (DAAs) for HCV cure."
+        },
+        "fatty_liver": {
+            "keywords": [
+                "fatty liver",
+                "nafld",
+                "nash",
+                "steatosis",
+                "masld",
+                "mash"
+            ],
+            "medications": [
+                "Vitamin E",
+                "Pioglitazone",
+                "Resmetirom (if approved)"
+            ],
+            "description": "Lifestyle modification is primary. Vitamin E/Pioglitazone for select non-diabetic/diabetic patients."
+        },
+        "cirrhosis_ascites": {
+            "keywords": [
+                "ascites",
+                "fluid",
+                "decompensated"
+            ],
+            "medications": [
+                "Spironolactone",
+                "Furosemide"
+            ],
+            "description": "Diuretics to manage fluid accumulation."
+        },
+        "autoimmune_hepatitis": {
+            "keywords": [
+                "autoimmune",
+                "aih"
+            ],
+            "medications": [
+                "Prednisone",
+                "Azathioprine"
+            ],
+            "description": "Immunosuppression to reduce liver inflammation."
+        },
+        "primary_biliary_cholangitis": {
+            "keywords": [
+                "pbc",
+                "cholangitis"
+            ],
+            "medications": [
+                "Ursodeoxycholic Acid (UDCA)",
+                "Obeticholic Acid"
+            ],
+            "description": "Bile acid therapy to slow disease progression."
+        }
+    }
+}
