@@ -38,7 +38,33 @@ class RouterAgent:
             logging.info(f"Router detected image type: {image_type}")
             
             if image_type == "rx":
-                return self.prescription.predict(input_data)
+                logging.info("Routing to Prescription Agent...")
+                rx_result = self.prescription.predict(input_data)
+                
+                # --- Multi-Agent Orchestration ---
+                # Key Step: If the Prescription Agent extracted structured lab values,
+                # pass them to the Biochem Agent for a health diagnosis.
+                
+                structured_labs = rx_result.get("labs_structured", {})
+                # Heuristic: If we found at least a few relevant lab keys, run analysis
+                if structured_labs and len(structured_labs) >= 1:
+                     logging.info(f"Router: Found structured labs in Rx, chaining to Biochem Agent. Data: {structured_labs}")
+                     biochem_result = self.biochem.predict(structured_labs)
+                     
+                     # Merge Results
+                     # We want to keep the Rx details (medicines, text) but add the Biochem diagnosis
+                     rx_result["diagnosis"] = biochem_result.get("diagnosis", "Unknown")
+                     rx_result["biochem_analysis"] = biochem_result # Store full analysis if needed
+                     
+                     # Extend recommendations
+                     if biochem_result.get("recommendations"):
+                         rx_result["recommendations"] = (rx_result.get("recommendations") or []) + biochem_result.get("recommendations")
+                         
+                     # Add biochem confidence to details or average it? 
+                     # For now, let's keep confidence as 1.0 (OCR success) or maybe partial?
+                
+                return rx_result
+
             elif image_type == "ultrasound":
                 return self.ultrasound.predict(input_data)
             elif image_type == "ct":

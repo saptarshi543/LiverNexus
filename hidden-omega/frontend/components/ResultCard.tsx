@@ -66,6 +66,18 @@ export default function ResultCard({ data }: ResultCardProps) {
                         </div>
                     )}
 
+                    {/* Report: Detailed Review */}
+                    {data.detailed_review && (
+                        <div className="bg-slate-800/80 rounded-xl p-6 border border-slate-600 mb-6">
+                            <h3 className="text-lg font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                                <span>📋</span> Detailed Clinical Review
+                            </h3>
+                            <div className="text-slate-300 whitespace-pre-line leading-relaxed">
+                                {data.detailed_review}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Prescription: Medicines */}
                     {data.medicines && data.medicines.length > 0 && (
                         <div className="bg-teal-500/10 rounded-xl p-6 border border-teal-500/20 mb-4">
@@ -118,6 +130,31 @@ export default function ResultCard({ data }: ResultCardProps) {
                         </div>
                     )}
 
+                    {/* Prescription: Merged Biochem Analysis */}
+                    {data.biochem_analysis && (
+                        <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-xl p-6 border border-emerald-500/20 mb-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                                <span>🤖</span> Smart Health Analysis
+                            </h3>
+                            <div className="text-slate-200">
+                                <p className="mb-2">
+                                    Based on the extracted lab values, our Biochem Agent analyzed your liver health:
+                                </p>
+                                <div className="font-bold text-xl text-white mb-2">
+                                    {data.biochem_analysis.diagnosis}
+                                </div>
+                                <div className="text-sm text-slate-400">
+                                    Confidence: {(data.biochem_analysis.confidence * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {data.details && (
                         <div className="mt-6">
                             <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Detailed Metrics</h4>
@@ -139,7 +176,9 @@ export default function ResultCard({ data }: ResultCardProps) {
                         <span>ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
                     </div>
                 </div>
-            )}
+            )
+            }
         </div>
     );
 }
+
