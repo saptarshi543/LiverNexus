@@ -48,18 +48,23 @@ export default function ResultCard({ data }: ResultCardProps) {
                     </div>
 
                     {data.recommendations && data.recommendations.length > 0 && (
-                        <div className="bg-blue-500/10 rounded-xl p-6 border border-blue-500/20 mb-6">
-                            <h3 className="text-lg font-semibold text-blue-400 mb-3 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
+                        <div className="relative group overflow-hidden rounded-xl bg-slate-900/40 border border-slate-700/50 p-6 backdrop-blur-sm transition-all hover:border-blue-500/30 mb-6">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                            <h3 className="relative text-sm font-semibold text-blue-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <span className="p-1 rounded bg-blue-500/20 text-blue-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                </span>
                                 Recommended Next Steps
                             </h3>
-                            <ul className="space-y-2">
+
+                            <ul className="relative space-y-3">
                                 {data.recommendations.map((rec: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2 text-slate-300">
-                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                                        <span>{rec}</span>
+                                    <li key={idx} className="flex items-start gap-3 text-slate-300 text-sm leading-relaxed group/item">
+                                        <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500/50 shadow-[0_0_8px_rgba(59,130,246,0.5)] group-hover/item:bg-blue-400 transition-colors shrink-0" />
+                                        <span className="group-hover/item:text-slate-200 transition-colors">{rec}</span>
                                     </li>
                                 ))}
                             </ul>
