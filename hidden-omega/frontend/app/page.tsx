@@ -130,7 +130,7 @@ export default function Home() {
             New Generation Diagnostics
           </div>
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6">
-            Liver<span className="text-primary">AI</span>
+            Liver<span className="text-primary"> Nexus</span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
             Advanced autonomous agents for multi-modal liver disease diagnostics.
